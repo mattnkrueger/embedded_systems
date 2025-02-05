@@ -1,7 +1,7 @@
 # embedded_systems
 
-lab1: blinky
-lab2:
-lab3:
-lab4:
-project:
+[x] lab1: blinky
+[] lab2:
+[] lab3:
+[] lab4:
+[] project:

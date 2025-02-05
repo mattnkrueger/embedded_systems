@@ -52,11 +52,12 @@ rjmp loop									; 'jumps' back to "loop" marker to repeat the cycle
 ; ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ; SUBROUTINE: "delay_long"
 ;
-; original: count = 0xffff (65535)
-; ([254(1+1+2)]+1+1+1+2+2)count+1+1+1+2+1+4 = approx 4.19s
+; ------------- back of envelope calculations -------------
+; (x)67,107,855/16,000,000 = 3.042s
+; x = 3.042/4.19424
+; thus x = .72528
 ;
-; modified: count = 0x1D00 (7424)
-; ([254(1+1+2)]+1+1+1+2+2)count+1+1+1+2+1+4 = approx 0.3042s
+; count * .72528 -> 65535 * .72528 = 47531.25 floored -> 47531  
 ; ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ; `ldi` - load immediately. Loads a constant into a register (can only use general purpose registers r16-r31). Holds an 8-bit value (executes at runtime; .equ executes at assembly time) (1 cycle)
@@ -72,15 +73,18 @@ rjmp loop									; 'jumps' back to "loop" marker to repeat the cycle
 
 ; Modified for 0.3042s delay with 16MHz clock
 ; Original was 4.119424s
-; CHANGES: count -> 0xB9DC (47580) from 0xffff (65535)
+;
+; 635 needed 
+; 643 = (1+1+2)*x + 1+1+1
 
-.equ count = 0xB9DC                         ; .equ (defines a constant) sets count to 0xffff (65535 which is largest 16 bit value & maximum delay) at assembly time. SIMPLY AN ALIAS
+.equ count1 = 0x14c3                     ; .equ (defines a constant) sets count to 0xffff (65535 which is largest 16 bit value & maximum delay) at assembly time. SIMPLY AN ALIAS
 
 delay_long:									; label to mark specific location on code. `delay_long` defines the time that elapses between led light switches.
 
-	ldi r30, low(count)						; loads lower 8 bits of count ffff (1111) into register 30 
-	ldi r31, high(count)					; loads upper 8 bits of count ffff (1111) into register 31
-	
+	ldi r30, low(count1)					; loads lower 8 bits of count ffff (1111) into register 30 
+	ldi r31, high(count1)					; loads upper 8 bits of count ffff (1111) into register 31
+	ldi r27, 156
+
 	d1:                                     ; marker for first delay
 		ldi r29, 0xff		    	        ; load 1111 (high) into register 29 
 
@@ -89,7 +93,20 @@ delay_long:									; label to mark specific location on code. `delay_long` defi
 		dec r29            					; r29 = r29 - 1 (this will run 255 times since ff loaded into r29)
 		brne d2								; check if dec 29 flags Z. Only continues once value in register 29 is 0.
 		sbiw r31:r30, 1			            ; subtract 1 from timer registers.
-		brne d1				                ; check if timer has reached 0 (Z flag). if it has -> go back to d1 
+		brne d1				                ; check if timer has reached 0 (Z flag). if it has -> go back to d1
+
+	; added loop to reach 635
+	d3:
+		nop 
+		dec r27
+		brne d3
+		nop
+		nop
+		nop
+		nop
+		nop
+
+		
 ret											; return from sub routine to location on stack from which it was called.
 
 .exit                                       ; exit program
